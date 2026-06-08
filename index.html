@@ -1,76 +1,81 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Firebase 로그인 시스템</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Firebase 로그인 데이터 관리</title>
 
-<style>
-body{
-  margin:0;
-  font-family:Arial;
-  background:linear-gradient(135deg,#e3f2fd,#fce4ec);
-}
+  <style>
+    * { box-sizing: border-box; }
 
-.container{
-  width:min(900px,92%);
-  margin:40px auto;
-  background:#fff;
-  padding:24px;
-  border-radius:20px;
-  box-shadow:0 10px 30px rgba(0,0,0,0.15);
-}
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #e3f2fd, #fce4ec);
+      font-family: Arial;
+    }
 
-input{
-  width:100%;
-  padding:12px;
-  margin:6px 0;
-  border-radius:10px;
-  border:1px solid #ddd;
-}
+    .container {
+      width: min(900px, 92%);
+      margin: 40px auto;
+      background: white;
+      padding: 24px;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    }
 
-button{
-  padding:10px 14px;
-  border:none;
-  border-radius:10px;
-  cursor:pointer;
-  margin:4px;
-}
+    input {
+      width: 100%;
+      padding: 12px;
+      margin: 6px 0;
+      border-radius: 10px;
+      border: 1px solid #ddd;
+    }
 
-.login{background:#42a5f5;color:#fff;}
-.logout{background:#ef5350;color:#fff;}
+    button {
+      padding: 10px 14px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      margin-top: 6px;
+      font-weight: bold;
+    }
 
-.box{
-  margin-top:15px;
-  padding:12px;
-  background:#f7f9fb;
-  border-radius:12px;
-}
-</style>
+    .login-btn { background: #42a5f5; color: white; }
+    .logout-btn { background: #ef5350; color: white; }
+
+    .box {
+      margin-top: 12px;
+      padding: 12px;
+      background: #f7f9fb;
+      border-radius: 12px;
+    }
+
+    .hidden { display: none; }
+  </style>
 </head>
 
 <body>
 
 <div class="container">
-<h1>⚡ Firebase 로그인 시스템</h1>
+  <h2>🔥 Firebase 로그인 시스템</h2>
 
-<!-- LOGIN -->
-<div id="authBox">
-  <input id="email" placeholder="이메일">
-  <input id="pw" type="password" placeholder="비밀번호">
-  <button class="login" onclick="login()">로그인</button>
-</div>
-
-<!-- MAIN -->
-<div id="mainBox" style="display:none">
-  <button class="logout" onclick="logout()">로그아웃</button>
-
-  <div class="box">
-    <b>로그인 기록</b>
-    <div id="logList"></div>
+  <!-- LOGIN -->
+  <div id="authBox">
+    <input id="email" type="email" placeholder="이메일">
+    <input id="pw" type="password" placeholder="비밀번호">
+    <button class="login-btn" id="loginBtn">로그인</button>
   </div>
-</div>
 
+  <!-- MAIN -->
+  <div id="mainBox" class="hidden">
+    <button class="logout-btn" id="logoutBtn">로그아웃</button>
+
+    <div class="box">
+      <b>로그인 기록</b>
+      <div id="logList"></div>
+    </div>
+  </div>
 </div>
 
 <script type="module">
@@ -79,7 +84,9 @@ import {
   getAuth,
   signInWithEmailAndPassword,
   signOut,
-  onAuthStateChanged
+  onAuthStateChanged,
+  setPersistence,
+  browserLocalPersistence
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 import {
@@ -90,107 +97,112 @@ import {
   onValue
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
+/* 🔥 Firebase 설정 */
 const firebaseConfig = {
   apiKey: "AIzaSyBmI4WtKPBD4meKik1kte92FsrWWKE4zpY",
   authDomain: "test-cccd1.firebaseapp.com",
   databaseURL: "https://test-cccd1-default-rtdb.firebaseio.com",
   projectId: "test-cccd1",
-
 };
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getDatabase(app);
 
-let user = null;
+/* 🔥 로그인 유지 (GitHub Pages 핵심) */
+await setPersistence(auth, browserLocalPersistence);
 
-/* ===== DOM 직접 접근 (중요) ===== */
-const emailInput = document.getElementById("email");
-const pwInput = document.getElementById("pw");
+/* DOM */
+const email = document.getElementById("email");
+const pw = document.getElementById("pw");
 const authBox = document.getElementById("authBox");
 const mainBox = document.getElementById("mainBox");
 const logList = document.getElementById("logList");
 
-/* ================= LOGIN ================= */
+/* 현재 유저 */
+let user = null;
 
-window.login = async () => {
+/* ================= LOGIN ================= */
+document.getElementById("loginBtn").addEventListener("click", async () => {
+  console.log("LOGIN CLICKED");
+
+  if (!email.value || !pw.value) {
+    alert("이메일/비밀번호 입력");
+    return;
+  }
+
   try {
-    const res = await signInWithEmailAndPassword(
+    const result = await signInWithEmailAndPassword(
       auth,
-      emailInput.value,
-      pwInput.value
+      email.value,
+      pw.value
     );
 
-    user = res.user;
-
-    // 로그인 기록 저장
-    const logRef = ref(db, "loginLogs/" + user.uid);
-    const newLog = push(logRef);
-
-    await set(newLog, {
-      email: user.email,
-      time: new Date().toLocaleString(),
-      type: "login"
-    });
+    console.log("LOGIN SUCCESS:", result.user.email);
 
   } catch (err) {
-    alert("로그인 실패: 이메일/비밀번호 확인");
     console.error(err);
+    alert("로그인 실패: " + err.message);
   }
-};
+});
 
 /* ================= LOGOUT ================= */
-
-window.logout = async () => {
-  if(user){
+document.getElementById("logoutBtn").addEventListener("click", async () => {
+  if (user) {
     const logRef = ref(db, "loginLogs/" + user.uid);
     const newLog = push(logRef);
 
     await set(newLog, {
       email: user.email,
-      time: new Date().toLocaleString(),
-      type: "logout"
+      type: "logout",
+      time: new Date().toLocaleString()
     });
   }
 
   await signOut(auth);
-};
+});
 
 /* ================= STATE ================= */
-
-onAuthStateChanged(auth,(u)=>{
-  if(u){
+onAuthStateChanged(auth, (u) => {
+  if (u) {
     user = u;
-    authBox.style.display="none";
-    mainBox.style.display="block";
+
+    authBox.classList.add("hidden");
+    mainBox.classList.remove("hidden");
+
     loadLogs();
-  }else{
-    authBox.style.display="block";
-    mainBox.style.display="none";
+  } else {
+    user = null;
+
+    authBox.classList.remove("hidden");
+    mainBox.classList.add("hidden");
+
+    logList.innerHTML = "";
   }
 });
 
-/* ================= LOAD LOGS ================= */
-
-function loadLogs(){
+/* ================= LOG 기록 ================= */
+function loadLogs() {
   const logRef = ref(db, "loginLogs/" + user.uid);
 
-  onValue(logRef,(snap)=>{
+  onValue(logRef, (snap) => {
     const data = snap.val();
     logList.innerHTML = "";
 
-    for(let id in data){
-      const d = data[id];
+    if (!data) return;
 
+    Object.values(data).forEach(d => {
       const div = document.createElement("div");
       div.className = "box";
+
       div.innerHTML = `
         <b>${d.type}</b><br>
         ${d.email}<br>
         ${d.time}
       `;
+
       logList.appendChild(div);
-    }
+    });
   });
 }
 </script>
