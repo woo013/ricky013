@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>전기 안전 + Firebase 로그인 기록 시스템</title>
+<title>Firebase 로그인 시스템</title>
 
 <style>
 body{
@@ -21,9 +21,7 @@ body{
   box-shadow:0 10px 30px rgba(0,0,0,0.15);
 }
 
-h1{text-align:center;}
-
-input, textarea{
+input{
   width:100%;
   padding:12px;
   margin:6px 0;
@@ -40,8 +38,6 @@ button{
 }
 
 .login{background:#42a5f5;color:#fff;}
-.ai{background:#ffca28;}
-.tts{background:#7e57c2;color:#fff;}
 .logout{background:#ef5350;color:#fff;}
 
 .box{
@@ -54,38 +50,25 @@ button{
 </head>
 
 <body>
-<div class="container">
 
-<h1>⚡ 전기 안전 + 로그인 기록 시스템</h1>
+<div class="container">
+<h1>⚡ Firebase 로그인 시스템</h1>
 
 <!-- LOGIN -->
 <div id="authBox">
-  <input id="email" placeholder="이메일 (Firebase에 등록된 계정)">
+  <input id="email" placeholder="이메일">
   <input id="pw" type="password" placeholder="비밀번호">
   <button class="login" onclick="login()">로그인</button>
 </div>
 
 <!-- MAIN -->
 <div id="mainBox" style="display:none">
-
   <button class="logout" onclick="logout()">로그아웃</button>
-
-  <h3>⚡ 전기 안전 진단</h3>
-  <textarea id="input" placeholder="예: 콘센트가 뜨겁고 탄 냄새가 난다"></textarea>
-
-  <button class="ai" onclick="analyze()">AI 진단</button>
-  <button class="tts" onclick="speak()">음성 출력</button>
-
-  <div class="box">
-    <b>진단 결과</b>
-    <p id="result">-</p>
-  </div>
 
   <div class="box">
     <b>로그인 기록</b>
     <div id="logList"></div>
   </div>
-
 </div>
 
 </div>
@@ -107,12 +90,12 @@ import {
   onValue
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-/* 🔥 Firebase 설정 */
 const firebaseConfig = {
   apiKey: "AIzaSyBmI4WtKPBD4meKik1kte92FsrWWKE4zpY",
   authDomain: "test-cccd1.firebaseapp.com",
   databaseURL: "https://test-cccd1-default-rtdb.firebaseio.com",
   projectId: "test-cccd1",
+
 };
 
 const app = initializeApp(firebaseConfig);
@@ -121,24 +104,42 @@ const db = getDatabase(app);
 
 let user = null;
 
-/* =========================
-   LOGIN (회원가입 없음)
-========================= */
+/* ===== DOM 직접 접근 (중요) ===== */
+const emailInput = document.getElementById("email");
+const pwInput = document.getElementById("pw");
+const authBox = document.getElementById("authBox");
+const mainBox = document.getElementById("mainBox");
+const logList = document.getElementById("logList");
+
+/* ================= LOGIN ================= */
 
 window.login = async () => {
-  const res = await signInWithEmailAndPassword(auth, email.value, pw.value);
-  user = res.user;
+  try {
+    const res = await signInWithEmailAndPassword(
+      auth,
+      emailInput.value,
+      pwInput.value
+    );
 
-  // 🔥 로그인 기록 저장
-  const logRef = ref(db, "loginLogs/" + user.uid);
-  const newLog = push(logRef);
+    user = res.user;
 
-  await set(newLog, {
-    email: user.email,
-    time: new Date().toLocaleString(),
-    type: "login"
-  });
+    // 로그인 기록 저장
+    const logRef = ref(db, "loginLogs/" + user.uid);
+    const newLog = push(logRef);
+
+    await set(newLog, {
+      email: user.email,
+      time: new Date().toLocaleString(),
+      type: "login"
+    });
+
+  } catch (err) {
+    alert("로그인 실패: 이메일/비밀번호 확인");
+    console.error(err);
+  }
 };
+
+/* ================= LOGOUT ================= */
 
 window.logout = async () => {
   if(user){
@@ -155,9 +156,7 @@ window.logout = async () => {
   await signOut(auth);
 };
 
-/* =========================
-   로그인 상태 감지
-========================= */
+/* ================= STATE ================= */
 
 onAuthStateChanged(auth,(u)=>{
   if(u){
@@ -171,42 +170,7 @@ onAuthStateChanged(auth,(u)=>{
   }
 });
 
-/* =========================
-   AI (전기 안전 판단)
-========================= */
-
-window.analyze = () => {
-  const t = input.value;
-
-  let result = "";
-
-  if(t.includes("탄") || t.includes("스파크") || t.includes("연기")){
-    result = "🔴 위험: 즉시 전원 차단 필요";
-  }
-  else if(t.includes("뜨거") || t.includes("과열")){
-    result = "🟡 주의: 과열 가능성 있음";
-  }
-  else{
-    result = "🟢 정상 상태";
-  }
-
-  document.getElementById("result").innerText = result;
-};
-
-/* =========================
-   TTS (브라우저 음성)
-========================= */
-
-window.speak = () => {
-  const text = document.getElementById("result").innerText;
-  const utter = new SpeechSynthesisUtterance(text);
-  utter.lang = "ko-KR";
-  speechSynthesis.speak(utter);
-};
-
-/* =========================
-   로그인 기록 출력
-========================= */
+/* ================= LOAD LOGS ================= */
 
 function loadLogs(){
   const logRef = ref(db, "loginLogs/" + user.uid);
@@ -217,8 +181,9 @@ function loadLogs(){
 
     for(let id in data){
       const d = data[id];
+
       const div = document.createElement("div");
-      div.className="box";
+      div.className = "box";
       div.innerHTML = `
         <b>${d.type}</b><br>
         ${d.email}<br>
