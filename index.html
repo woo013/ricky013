@@ -40,7 +40,6 @@ button{
 }
 
 .login{background:#42a5f5;color:#fff;}
-.save{background:#66bb6a;color:#fff;}
 .ai{background:#ffca28;}
 .tts{background:#7e57c2;color:#fff;}
 .logout{background:#ef5350;color:#fff;}
@@ -59,11 +58,10 @@ button{
 
 <h1>⚡ 전기 안전 + 로그인 기록 시스템</h1>
 
-<!-- AUTH -->
+<!-- LOGIN -->
 <div id="authBox">
-  <input id="email" placeholder="이메일">
+  <input id="email" placeholder="이메일 (Firebase에 등록된 계정)">
   <input id="pw" type="password" placeholder="비밀번호">
-  <button class="login" onclick="signup()">회원가입</button>
   <button class="login" onclick="login()">로그인</button>
 </div>
 
@@ -96,7 +94,6 @@ button{
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getAuth,
-  createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged
@@ -125,12 +122,8 @@ const db = getDatabase(app);
 let user = null;
 
 /* =========================
-   AUTH
+   LOGIN (회원가입 없음)
 ========================= */
-
-window.signup = async () => {
-  await createUserWithEmailAndPassword(auth, email.value, pw.value);
-};
 
 window.login = async () => {
   const res = await signInWithEmailAndPassword(auth, email.value, pw.value);
@@ -163,7 +156,7 @@ window.logout = async () => {
 };
 
 /* =========================
-   AUTH STATE
+   로그인 상태 감지
 ========================= */
 
 onAuthStateChanged(auth,(u)=>{
@@ -179,7 +172,7 @@ onAuthStateChanged(auth,(u)=>{
 });
 
 /* =========================
-   AI (로컬 판단)
+   AI (전기 안전 판단)
 ========================= */
 
 window.analyze = () => {
@@ -201,7 +194,7 @@ window.analyze = () => {
 };
 
 /* =========================
-   TTS (브라우저)
+   TTS (브라우저 음성)
 ========================= */
 
 window.speak = () => {
@@ -212,7 +205,7 @@ window.speak = () => {
 };
 
 /* =========================
-   로그인 기록 불러오기
+   로그인 기록 출력
 ========================= */
 
 function loadLogs(){
