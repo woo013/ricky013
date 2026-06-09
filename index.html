@@ -2,210 +2,568 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Firebase 로그인 데이터 관리</title>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>전기 안전 진단 도우미 (ElectroSafety AI)</title>
   <style>
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
     body {
       margin: 0;
       min-height: 100vh;
-      background: linear-gradient(135deg, #e3f2fd, #fce4ec);
-      font-family: Arial;
+      background: linear-gradient(135deg, #1e3c72, #2a5298);
+      font-family: 'Segoe UI', Arial, sans-serif;
+      color: #333;
     }
 
     .container {
-      width: min(900px, 92%);
+      width: min(1000px, 94%);
       margin: 40px auto;
-      background: white;
+      background: #ffffff;
+      border-radius: 24px;
+      padding: 32px;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      text-align: center;
+      font-size: 32px;
+      color: #1e3c72;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #666;
+      margin-bottom: 28px;
+      font-size: 15px;
+    }
+
+    /* 인증 섹션 스타일 */
+    .auth-box {
+      max-width: 420px;
+      margin: 40px auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
       padding: 24px;
-      border-radius: 20px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+      border-radius: 16px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
     }
 
-    input {
+    .auth-box h2 {
+      margin: 0 0 10px;
+      text-align: center;
+      color: #334155;
+    }
+
+    /* 메인 섹션 레이아웃 */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 850px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 18px;
+      padding: 20px;
+    }
+
+    .card h3 {
+      margin-top: 0;
+      color: #1e3c72;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 8px;
+    }
+
+    /* 입력 폼 및 체크리스트 */
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    .checkbox-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .checkbox-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      background: #fff;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      cursor: pointer;
+    }
+
+    .checkbox-item input {
+      margin-top: 3px;
+    }
+
+    input[type="text"], input[type="email"], input[type="password"], select {
       width: 100%;
-      padding: 12px;
-      margin: 6px 0;
+      height: 44px;
+      padding: 0 14px;
+      border: 1px solid #cbd5e1;
       border-radius: 10px;
-      border: 1px solid #ddd;
+      font-size: 15px;
+      outline: none;
     }
 
+    input:focus, select:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    }
+
+    /* 버튼 스타일 */
     button {
-      padding: 10px 14px;
       border: none;
       border-radius: 10px;
+      padding: 0 16px;
+      height: 44px;
+      font-size: 15px;
       cursor: pointer;
-      margin-top: 6px;
+      transition: 0.15s;
       font-weight: bold;
     }
 
-    .login-btn { background: #42a5f5; color: white; }
-    .logout-btn { background: #ef5350; color: white; }
-
-    .box {
-      margin-top: 12px;
-      padding: 12px;
-      background: #f7f9fb;
-      border-radius: 12px;
+    button:hover {
+      transform: translateY(-1px);
+      opacity: 0.9;
     }
 
-    .hidden { display: none; }
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.6;
+      transform: none;
+    }
+
+    .primary-btn { background: #3b82f6; color: white; width: 100%; }
+    .secondary-btn { background: #10b981; color: white; width: 100%; }
+    .danger-btn { background: #ef4444; color: white; }
+    .logout-btn { background: #64748b; color: white; height: 36px; font-size: 13px; }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 18px;
+      border-radius: 14px;
+      background: #f1f5f9;
+      margin-bottom: 24px;
+    }
+
+    /* 결과창 및 재생 바 */
+    .answer-box {
+      min-height: 120px;
+      padding: 14px;
+      border-radius: 12px;
+      background: #fff;
+      border: 1px solid #cbd5e1;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+
+    audio { width: 100%; margin-top: 8px; }
+
+    /* 리스트 스타일 */
+    .list { display: flex; flex-direction: column; gap: 12px; margin-top: 14px; max-height: 500px; overflow-y: auto; }
+    .item { padding: 14px; border-radius: 12px; background: white; border: 1px solid #e2e8f0; }
+    .item-title { font-weight: bold; font-size: 16px; margin: 0 0 4px; color: #1e3c72; }
+    .item-content { margin: 0; font-size: 13px; color: #475569; white-space: pre-wrap; }
+    .item-meta { font-size: 11px; color: #94a3b8; margin-top: 6px; display: flex; justify-content: space-between; align-items: center; }
+
+    .status { font-size: 13px; color: #64748b; min-height: 20px; margin-top: 6px; text-align: center; }
+    .hidden { display: none !important; }
+    .notice { font-size: 12px; color: #64748b; text-align: center; margin-top: 10px; }
   </style>
 </head>
-
 <body>
+  <div class="container">
+    <h1>전기 안전 진단 도우미</h1>
+    <div class="subtitle">AI 기반 전기 설비 위험성 진단 및 안전 솔루션 플랫폼</div>
 
-<div class="container">
-  <h2>🔥 Firebase 로그인 시스템</h2>
+    <section id="authSection">
+      <div class="auth-box">
+        <h2>사용자 로그인</h2>
+        <input id="emailInput" type="email" placeholder="이메일 주소" />
+        <input id="passwordInput" type="password" placeholder="비밀번호 (6자리 이상)" />
+        <button class="primary-btn" id="loginBtn">로그인</button>
+        <button class="secondary-btn" id="signupBtn">새 계정 등록 (회원가입)</button>
+        <div class="notice">가입되지 않은 이메일은 회원가입을 먼저 진행하세요.</div>
+      </div>
+    </section>
 
-  <!-- LOGIN -->
-  <div id="authBox">
-    <input id="email" type="email" placeholder="이메일">
-    <input id="pw" type="password" placeholder="비밀번호">
-    <button class="login-btn" id="loginBtn">로그인</button>
+    <section id="mainSection" class="hidden">
+      <div class="top-bar">
+        <div>로그인 계정: <strong id="userEmail" style="color:#1e3c72;"></strong></div>
+        <button class="logout-btn" id="logoutBtn">로그아웃</button>
+      </div>
+
+      <div class="main-grid">
+        <div class="card">
+          <h3>자가 안전 진단 및 AI 분석</h3>
+          
+          <div class="form-group">
+            <label for="locationInput">점검 장소 및 설비명</label>
+            <input id="locationInput" type="text" placeholder="예: 내 방 멀티탭, 주방 인덕션 콘센트 등" />
+          </div>
+
+          <label style="display:block; font-weight:bold; margin-bottom:6px; font-size:14px;">위험 요인 체크리스트</label>
+          <div class="checkbox-group">
+            <label class="checkbox-item">
+              <input type="checkbox" class="safety-check" value="하나의 콘센트에 고전력 멀티탭을 문어발식으로 꽂아 사용 중">
+              <span>콘센트 문어발식 과부하 사용 여부</span>
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" class="safety-check" value="전선 피복이 벗겨져 있거나 구부러짐, 찍힘 손상이 관찰됨">
+              <span>전선/케이블 피복 손상 유무</span>
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" class="safety-check" value="콘센트나 가전제품 주변에 물기, 습기 또는 먼지가 쌓여 있음">
+              <span>습기, 물기, 먼지 방치 상태</span>
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" class="safety-check" value="가전제품 가동 시 플러그 부근에서 미열이 나거나 찌르르하는 소음 발생">
+              <span>작동 시 이상 발열 및 미세 소음</span>
+            </label>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
+            <button class="primary-btn" id="askBtn">AI 안전 진단 시작</button>
+            <button class="secondary-btn" id="ttsBtn" disabled>음성 브리핑 듣기</button>
+          </div>
+          <div id="status" class="status"></div>
+
+          <div style="margin-top: 18px;">
+            <label style="font-weight:bold; font-size:14px;">AI 진단 결과 및 정밀 솔루션</label>
+            <div id="answerBox" class="answer-box">체크리스트를 선택한 후 진단 버튼을 눌러주세요.</div>
+            <audio id="audioPlayer" controls class="hidden"></audio>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>클라우드 진단 기록 (Firebase)</h3>
+          <div style="display:flex; justify-content: space-between; align-items:center;">
+            <span style="font-size:13px; color:#64748b;">실시간 저장된 정밀 진단 보고서 리스트</span>
+            <button id="refreshBtn" style="background:#cbd5e1; color:#333; height:32px; padding:0 10px; font-size:12px;">새로고침</button>
+          </div>
+          <div id="dataList" class="list"></div>
+        </div>
+      </div>
+    </section>
   </div>
 
-  <!-- MAIN -->
-  <div id="mainBox" class="hidden">
-    <button class="logout-btn" id="logoutBtn">로그아웃</button>
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+    import {
+      getAuth,
+      createUserWithEmailAndPassword,
+      signInWithEmailAndPassword,
+      signOut,
+      onAuthStateChanged
+    } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+    import {
+      getDatabase,
+      ref,
+      push,
+      set,
+      remove,
+      onValue,
+      off
+    } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
 
-    <div class="box">
-      <b>로그인 기록</b>
-      <div id="logList"></div>
-    </div>
-  </div>
-</div>
+    // [전달받은 Firebase 설정 정보]
+    const firebaseConfig = {
+      apiKey: 'AIzaSyDO-v52Ehwphh5gW0WBzu9_DliMhOzy4Yo',
+      authDomain: 'kang-f4e85.firebaseapp.com',
+      databaseURL: 'https://kang-f4e85-default-rtdb.firebaseio.com',
+      projectId: 'kang-f4e85',
+      storageBucket: 'kang-f4e85.firebasestorage.app',
+      messagingSenderId: '107057126084',
+      appId: '1:107057126084:web:30f7bcb3f25dd2aa4a0791',
+      measurementId: 'G-DJ52YTYQZM'
+    };
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {
-  getAuth,
-  signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
-  setPersistence,
-  browserLocalPersistence
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const database = getDatabase(app);
 
-import {
-  getDatabase,
-  ref,
-  push,
-  set,
-  onValue
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+    // [전달받은 Apps Script 프록시 URL]
+    const CHAT_API_URL = 'https://script.google.com/macros/s/AKfycbyTS-n6dNxhXGHxck-BL97z9l2PPrqZbl0tqjtPIP44MVFtyOiTwizk4jva8GMuV38p/exec';
+    const TTS_API_URL = 'https://script.google.com/macros/s/AKfycbxDNMIktE288seW2Mr5YgksYFeAP3SNl8YyQZFa1DuvD0N_8pjRLDmxkZBYyQ4WGPmt/exec';
 
-/* 🔥 Firebase 설정 */
-const firebaseConfig = {
-  apiKey: "AIzaSyBmI4WtKPBD4meKik1kte92FsrWWKE4zpY",
-  authDomain: "test-cccd1.firebaseapp.com",
-  databaseURL: "https://test-cccd1-default-rtdb.firebaseio.com",
-  projectId: "test-cccd1",
-};
+    // DOM 요소 초기화
+    const authSection = document.getElementById('authSection');
+    const mainSection = document.getElementById('mainSection');
+    const emailInput = document.getElementById('emailInput');
+    const passwordInput = document.getElementById('passwordInput');
+    const loginBtn = document.getElementById('loginBtn');
+    const signupBtn = document.getElementById('signupBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const userEmail = document.getElementById('userEmail');
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getDatabase(app);
+    const locationInput = document.getElementById('locationInput');
+    const askBtn = document.getElementById('askBtn');
+    const ttsBtn = document.getElementById('ttsBtn');
+    const answerBox = document.getElementById('answerBox');
+    const audioPlayer = document.getElementById('audioPlayer');
+    const dataList = document.getElementById('dataList');
+    const statusBox = document.getElementById('status');
+    const refreshBtn = document.getElementById('refreshBtn');
 
-/* 🔥 로그인 유지 (GitHub Pages 핵심) */
-await setPersistence(auth, browserLocalPersistence);
+    let currentUser = null;
+    let currentItemsRef = null;
+    let lastGeneratedResponse = ''; // DB 업로드 및 TTS 공유용 변수
 
-/* DOM */
-const email = document.getElementById("email");
-const pw = document.getElementById("pw");
-const authBox = document.getElementById("authBox");
-const mainBox = document.getElementById("mainBox");
-const logList = document.getElementById("logList");
+    function setStatus(msg) { statusBox.textContent = msg; }
 
-/* 현재 유저 */
-let user = null;
+    /* ==========================================================================
+       1. Firebase Authentication 공통 제어 로직
+       ========================================================================== */
+    function getAccountInfo() {
+      const email = emailInput.value.trim();
+      const password = passwordInput.value.trim();
+      if (!email || !password) { alert('이메일과 비밀번호를 입력하세요.'); return null; }
+      if (password.length < 6) { alert('비밀번호는 6자리 이상이어야 합니다.'); return null; }
+      return { email, password };
+    }
 
-/* ================= LOGIN ================= */
-document.getElementById("loginBtn").addEventListener("click", async () => {
-  console.log("LOGIN CLICKED");
-
-  if (!email.value || !pw.value) {
-    alert("이메일/비밀번호 입력");
-    return;
-  }
-
-  try {
-    const result = await signInWithEmailAndPassword(
-      auth,
-      email.value,
-      pw.value
-    );
-
-    console.log("LOGIN SUCCESS:", result.user.email);
-
-  } catch (err) {
-    console.error(err);
-    alert("로그인 실패: " + err.message);
-  }
-});
-
-/* ================= LOGOUT ================= */
-document.getElementById("logoutBtn").addEventListener("click", async () => {
-  if (user) {
-    const logRef = ref(db, "loginLogs/" + user.uid);
-    const newLog = push(logRef);
-
-    await set(newLog, {
-      email: user.email,
-      type: "logout",
-      time: new Date().toLocaleString()
+    signupBtn.addEventListener('click', async () => {
+      const account = getAccountInfo(); if (!account) return;
+      try {
+        await createUserWithEmailAndPassword(auth, account.email, account.password);
+        alert('회원가입이 완료되었습니다!');
+      } catch (err) { alert(getKoreanErrorMessage(err.code)); }
     });
-  }
 
-  await signOut(auth);
-});
-
-/* ================= STATE ================= */
-onAuthStateChanged(auth, (u) => {
-  if (u) {
-    user = u;
-
-    authBox.classList.add("hidden");
-    mainBox.classList.remove("hidden");
-
-    loadLogs();
-  } else {
-    user = null;
-
-    authBox.classList.remove("hidden");
-    mainBox.classList.add("hidden");
-
-    logList.innerHTML = "";
-  }
-});
-
-/* ================= LOG 기록 ================= */
-function loadLogs() {
-  const logRef = ref(db, "loginLogs/" + user.uid);
-
-  onValue(logRef, (snap) => {
-    const data = snap.val();
-    logList.innerHTML = "";
-
-    if (!data) return;
-
-    Object.values(data).forEach(d => {
-      const div = document.createElement("div");
-      div.className = "box";
-
-      div.innerHTML = `
-        <b>${d.type}</b><br>
-        ${d.email}<br>
-        ${d.time}
-      `;
-
-      logList.appendChild(div);
+    loginBtn.addEventListener('click', async () => {
+      const account = getAccountInfo(); if (!account) return;
+      try { await signInWithEmailAndPassword(auth, account.email, account.password); }
+      catch (err) { alert(getKoreanErrorMessage(err.code)); }
     });
-  });
-}
-</script>
 
+    logoutBtn.addEventListener('click', async () => { try { await signOut(auth); } catch(e){ alert('로그아웃 실패'); } });
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        currentUser = user;
+        authSection.classList.add('hidden');
+        mainSection.classList.remove('hidden');
+        userEmail.textContent = user.email;
+        emailInput.value = ''; passwordInput.value = '';
+        startRealtimeDataListener(user.uid);
+      } else {
+        currentUser = null;
+        authSection.classList.remove('hidden');
+        mainSection.classList.add('hidden');
+        userEmail.textContent = ''; dataList.innerHTML = '';
+        stopRealtimeDataListener();
+      }
+    });
+
+    /* ==========================================================================
+       2. OpenAI API 연동 (ChatGPT 진단 요청 및 리포트 작성)
+       ========================================================================== */
+    askBtn.addEventListener('click', async () => {
+      const location = locationInput.value.trim() || '미지정 장소/설비';
+      const checkboxes = document.querySelectorAll('.safety-check:checked');
+      
+      let checkContents = [];
+      checkboxes.forEach(cb => checkContents.push(cb.value));
+
+      if(checkContents.length === 0) {
+        alert('안전 점검 항목을 최소 하나 이상 체크해주세요.');
+        return;
+      }
+
+      // 전기공학적 맥락의 프롬프트 구성 생성
+      const prompt = `[전기 설비 안전 진단 요청]
+점검 대상 설비 및 위치: ${location}
+발견된 전기 현상/위험 상태 항목:
+- ${checkContents.join('\n- ')}
+
+위 조건에 기반하여 전기공학 관점에서 발생할 수 있는 사고 위험성(예: 단락 화재, 감전, 누전 고장 등)을 체계적으로 진단해줘. 그리고 전기 안전 가이드 및 긴급 조치 솔루션을 서술형식 말고 가독성이 좋게 개조식 문장(명확한 단락 구분)으로 나누어 작성해줘.`;
+
+      try {
+        askBtn.disabled = true;
+        ttsBtn.disabled = true;
+        audioPlayer.classList.add('hidden');
+        answerBox.textContent = 'AI가 전기 설비의 위험 요소를 분석하는 중입니다...';
+        setStatus('Apps Script 보안 프록시 서버 통신 중...');
+
+        const response = await fetch(CHAT_API_URL, {
+          method: 'POST',
+          body: JSON.stringify({ question: prompt })
+        });
+        const data = await response.json();
+
+        if (data.error) throw new Error(data.error);
+
+        lastGeneratedResponse = data.answer || '진단 리포트를 생성하지 못했습니다.';
+        answerBox.textContent = lastGeneratedResponse;
+        setStatus('AI 분석 완료');
+        ttsBtn.disabled = false;
+
+        // 진단 결과를 즉시 Firebase 실시간 데이터베이스에 자동 기록 처리
+        await saveDiagnosticToFirebase(location, checkContents, lastGeneratedResponse);
+
+      } catch (err) {
+        console.error(err);
+        answerBox.textContent = '진단 중 에러가 발생했습니다:\n' + err.message;
+        setStatus('요청 실패');
+      } finally {
+        askBtn.disabled = false;
+      }
+    });
+
+    /* ==========================================================================
+       3. OpenAI TTS API 연동 (생성된 진단 결과 음성 리포팅)
+       ========================================================================== */
+    ttsBtn.addEventListener('click', async () => {
+      if(!lastGeneratedResponse) return;
+
+      try {
+        ttsBtn.disabled = true;
+        setStatus('TTS 음성 브리핑 생성 요청 중...');
+
+        const response = await fetch(TTS_API_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            type: 'tts',
+            text: `전기안전 점검 브리핑입니다. ${lastGeneratedResponse}`,
+            model: 'tts-1',
+            voice: 'alloy',
+            speed: 1.0
+          })
+        });
+        const data = await response.json();
+
+        if (data.error) throw new Error(data.error);
+        if (!data.audioBase64) throw new Error('음성 인코딩 원본을 받지 못했습니다.');
+
+        const audioUrl = base64ToAudioUrl(data.audioBase64, 'audio/mpeg');
+        audioPlayer.src = audioUrl;
+        audioPlayer.classList.remove('hidden');
+        audioPlayer.play();
+        setStatus('브리핑 오디오 재생 중');
+      } catch (err) {
+        console.error(err);
+        alert('TTS 음성 합성 실패: ' + err.message);
+        setStatus('TTS 처리 실패');
+      } finally {
+        ttsBtn.disabled = false;
+      }
+    });
+
+    function base64ToAudioUrl(base64, mimeType) {
+      const byteCharacters = atob(base64);
+      const byteArrays = [];
+      for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+        const slice = byteCharacters.slice(offset, offset + 512);
+        const byteNumbers = new Array(slice.length);
+        for (let i = 0; i < slice.length; i++) {
+          byteNumbers[i] = slice.charCodeAt(i);
+        }
+        byteArrays.push(new Uint8Array(byteNumbers));
+      }
+      return URL.createObjectURL(new Blob(byteArrays, { type: mimeType }));
+    }
+
+    /* ==========================================================================
+       4. Firebase Realtime Database CRUD 데이터 관리 로직
+       ========================================================================== */
+    async function saveDiagnosticToFirebase(location, checks, aiReport) {
+      if (!currentUser) return;
+      try {
+        const itemsRef = ref(database, `users/${currentUser.uid}/items`);
+        const newItemRef = push(itemsRef);
+        await set(newItemRef, {
+          title: `[진단] ${location}`,
+          content: `체크된 항목:\n- ${checks.join('\n- ')}\n\n[AI 리포트]\n${aiReport}`,
+          createdAt: new Date().toLocaleString('ko-KR')
+        });
+      } catch (e) { console.error('DB 저장 실패:', e); }
+    }
+
+    function startRealtimeDataListener(uid) {
+      stopRealtimeDataListener();
+      currentItemsRef = ref(database, `users/${uid}/items`);
+      onValue(currentItemsRef, (snapshot) => {
+        renderData(snapshot.val());
+      });
+    }
+
+    function stopRealtimeDataListener() {
+      if (currentItemsRef) { off(currentItemsRef); currentItemsRef = null; }
+    }
+
+    refreshBtn.addEventListener('click', () => {
+      if (currentUser) startRealtimeDataListener(currentUser.uid);
+    });
+
+    window.deleteData = async function(id) {
+      if (!currentUser || !confirm('이 진단 이력을 삭제하시겠습니까?')) return;
+      try { await remove(ref(database, `users/${currentUser.uid}/items/${id}`)); } 
+      catch (e) { alert('삭제 처리에 실패했습니다.'); }
+    };
+
+    function renderData(data) {
+      dataList.innerHTML = '';
+      if (!data) {
+        dataList.innerHTML = '<div style="text-align:center; padding:30px; color:#888;">기록된 전기 안전 진단 이력이 없습니다.</div>';
+        return;
+      }
+      Object.entries(data).reverse().forEach(([id, item]) => {
+        const div = document.createElement('div');
+        div.className = 'item';
+        div.innerHTML = `
+          <p class="item-title">${escapeHTML(item.title || '')}</p>
+          <p class="item-content">${escapeHTML(item.content || '')}</p>
+          <div class="item-meta">
+            <span>작성일시: ${item.createdAt || '-'}</span>
+            <button class="danger-btn" style="height:26px; font-size:11px; padding:0 8px; border-radius:6px;" onclick="deleteData('${id}')">삭제</button>
+          </div>
+        `;
+        dataList.appendChild(div);
+      });
+    }
+
+    function escapeHTML(t) {
+      return String(t).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;');
+    }
+
+    function getKoreanErrorMessage(code) {
+      switch (code) {
+        case 'auth/email-already-in-use': return '이미 가입된 이메일입니다.';
+        case 'auth/invalid-email': return '이메일 형식이 올바르지 않습니다.';
+        case 'auth/weak-password': return '비밀번호는 6자리 이상이어야 합니다.';
+        case 'auth/invalid-credential': return '이메일 또는 비밀번호를 다시 확인해 주세요.';
+        default: return `오류가 발생했습니다 (${code})`;
+      }
+    }
+  </script>
 </body>
 </html>
